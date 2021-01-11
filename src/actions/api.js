@@ -1587,3 +1587,11 @@ export const onSubmitDccComment = (currentUserID, token, comment, parentid) =>
         throw error;
       });
   });
+
+// Records Actions
+export const onFetchRecordTimestamps = (
+  token,
+  state = PROPOSAL_STATE_VETTED,
+  version
+) =>
+  withCsrf((__, _, csrf) => api.recordsTimestamp(csrf, token, state, version));
