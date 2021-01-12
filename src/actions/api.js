@@ -1595,3 +1595,9 @@ export const onFetchRecordTimestamps = (
   version
 ) =>
   withCsrf((__, _, csrf) => api.recordsTimestamp(csrf, token, state, version));
+
+// Comments Actions
+export const onFetchCommentsTimestamps = (token, state, commentsids) =>
+  withCsrf((__, _, csrf) =>
+    api.commentsTimestamp(csrf, token, state, commentsids)
+  );
