@@ -406,7 +406,7 @@ const Proposal = React.memo(function Proposal({
                     />
                   )}
                   <DownloadComments
-                    label="Comments Timestamp"
+                    label="Comments Timestamps"
                     recordToken={proposalToken}
                     isTimestamp={true}
                     state={state}
