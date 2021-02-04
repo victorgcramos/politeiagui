@@ -7,8 +7,10 @@ import MerkleTree from "./merkle";
 import {
   INVOICE_STATUS_UNREVIEWED,
   DCC_STATUS_ACTIVE,
-  PROPOSAL_TYPE_RFP,
-  PROPOSAL_TYPE_RFP_SUBMISSION
+  PROPOSAL_METADATA_FILENAME,
+  VOTE_METADATA_FILENAME
+  // PROPOSAL_TYPE_RFP,
+  // PROPOSAL_TYPE_RFP_SUBMISSION
 } from "../constants";
 import {
   getHumanReadableError,
@@ -19,7 +21,7 @@ import {
   objectToBuffer,
   bufferToBase64String
 } from "../helpers";
-import { convertObjectToUnixTimestamp } from "src/utils";
+// import { convertObjectToUnixTimestamp } from "src/utils";
 
 const STATUS_ERR = {
   400: "Bad response from server",
@@ -31,7 +33,10 @@ const STATUS_ERR = {
 export const TOP_LEVEL_COMMENT_PARENTID = 0;
 
 const apiBase = "/api/";
-const apiPi = "/api/pi/";
+const apiPi = `${apiBase}pi/`;
+const apiRecords = `${apiBase}records/`;
+const apiTicketVote = `${apiBase}ticketvote/`;
+const apiComments = `${apiBase}comments/`;
 
 const getUrl = (path, version, api = apiBase) => {
   if (!path && !version) return api;
@@ -80,44 +85,40 @@ export const convertJsonToFile = (json, name) => ({
 export const makeProposal = (
   name,
   markdown,
-  rfpDeadline,
+  linkby = 0,
   type,
-  rfpLink,
+  linkto = 0,
   attachments = []
-) => ({
-  files: [
-    convertMarkdownToFile(name + "\n\n" + markdown),
-    ...(attachments || [])
-  ].map(({ name, mime, payload }) => ({
-    name,
-    mime,
-    payload,
-    digest: digestPayload(payload)
-  })),
-  metadata: [
-    {
-      hint: "proposalmetadata",
-      payload: bufferToBase64String(
-        objectToBuffer({
-          name,
-          linkby:
-            type === PROPOSAL_TYPE_RFP
-              ? convertObjectToUnixTimestamp(rfpDeadline)
-              : undefined,
-          linkto: type === PROPOSAL_TYPE_RFP_SUBMISSION ? rfpLink : undefined
-        })
-      ),
-      digest: objectToSHA256({
-        name,
-        linkby:
-          type === PROPOSAL_TYPE_RFP
-            ? convertObjectToUnixTimestamp(rfpDeadline)
-            : undefined,
-        linkto: type === PROPOSAL_TYPE_RFP_SUBMISSION ? rfpLink : undefined
-      })
-    }
-  ]
-});
+) => {
+  return {
+    files: [
+      convertMarkdownToFile(markdown),
+      {
+        //proposal metadata file
+        name: PROPOSAL_METADATA_FILENAME,
+        mime: "text/plain; charset=utf-8",
+        digest: objectToSHA256({ name }),
+        payload: bufferToBase64String(objectToBuffer({ name }))
+      },
+      ...(linkby || linkto
+        ? [
+            {
+              name: VOTE_METADATA_FILENAME,
+              mime: "text/plain; charset=utf-8",
+              digest: objectToSHA256({ linkto, linkby }),
+              payload: bufferToBase64String(objectToBuffer({ linkto, linkby }))
+            }
+          ]
+        : []),
+      ...(attachments || [])
+    ].map(({ name, mime, payload, digest }) => ({
+      name,
+      mime,
+      payload,
+      digest: digest ? digest : digestPayload(payload)
+    }))
+  };
+};
 
 export const makeInvoice = (
   month,
@@ -187,8 +188,7 @@ export const makeDccComment = (token, comment, parentid) => ({
   parentid
 });
 
-export const makeCommentVote = (token, vote, commentid, state) => ({
-  state,
+export const makeCommentVote = (token, vote, commentid) => ({
   token,
   commentid,
   vote
@@ -233,7 +233,7 @@ export const signRegister = (userid, record) => {
     throw Error("signRegister: Invalid params");
   }
   return pki.myPubKeyHex(userid).then((publickey) => {
-    const digests = [...record.files, ...(record.metadata || [])]
+    const digests = record.files
       .map((x) => Buffer.from(get("digest", x), "hex"))
       .sort(Buffer.compare);
     const tree = new MerkleTree(digests);
@@ -263,12 +263,7 @@ export const signComment = (userid, comment) =>
       pki
         .signStringHex(
           userid,
-          [
-            comment.state,
-            comment.token,
-            comment.parentid,
-            comment.comment
-          ].join("")
+          [comment.token, comment.parentid, comment.comment].join("")
         )
         .then((signature) => ({ ...comment, publickey, signature }))
     );
@@ -312,12 +307,7 @@ export const signCensorComment = (userid, comment) =>
       pki
         .signStringHex(
           userid,
-          [
-            comment.state,
-            comment.token,
-            comment.commentid,
-            comment.reason
-          ].join("")
+          [comment.token, comment.commentid, comment.reason].join("")
         )
         .then((signature) => ({ ...comment, publickey, signature }))
     );
@@ -416,9 +406,7 @@ export const verifyNewUser = (email, verificationToken, username) => {
 };
 
 export const likedComments = (csrf, token, userid, state) =>
-  POST("/comments/votes", csrf, { token, userid, state }, apiPi).then(
-    getResponse
-  );
+  POST("/votes", csrf, { token, userid, state }, apiComments).then(getResponse);
 
 export const editUser = (csrf, params) =>
   POST("/user/edit", csrf, params).then(getResponse);
@@ -458,10 +446,10 @@ export const loginWithUsername = (csrf, username, password) =>
   );
 
 export const commentVote = (csrf, comment) =>
-  POST("/comment/vote", csrf, comment, apiPi).then(getResponse);
+  POST("/vote", csrf, comment, apiComments).then(getResponse);
 
 export const censorComment = (csrf, comment) =>
-  POST("/comment/censor", csrf, comment, apiPi).then(getResponse);
+  POST("/del", csrf, comment, apiComments).then(getResponse);
 
 export const changeUsername = (csrf, password, newusername) =>
   POST("/user/username/change", csrf, {
@@ -514,7 +502,7 @@ export const verifyKeyRequest = (csrf, userid, verificationtoken) =>
 export const policy = () => GET("/policy").then(getResponse);
 
 export const userProposals = (csrf, userid) =>
-  POST("/proposals/inventory", csrf, { userid }, apiPi).then(getResponse);
+  POST("/userrecords", csrf, { userid }, apiRecords).then(getResponse);
 
 export const searchUser = (obj) =>
   GET(`/users?${qs.stringify(obj)}`).then(getResponse);
@@ -522,10 +510,13 @@ export const searchUser = (obj) =>
 export const proposalsBatch = (csrf, payload) =>
   POST("/proposals", csrf, payload, apiPi).then(getResponse);
 
+export const proposalDetails = (payload) =>
+  POST("/details", "", payload, apiRecords).then(getResponse);
+
 export const user = (userId) => GET(`/user/${userId}`).then(getResponse);
 
 export const proposalComments = (csrf, token, state) =>
-  POST("/comments", csrf, { token, state }, apiPi).then(getResponse);
+  POST("/comments", csrf, { token, state }, apiComments).then(getResponse);
 
 export const invoiceComments = (token) =>
   GET(`/invoices/${token}/comments`).then(getResponse);
@@ -552,7 +543,7 @@ export const proposalSetStatus = (
         .signStringHex(userid, token + version + status + reason)
         .then((signature) =>
           POST(
-            "/proposal/setstatus",
+            "/setstatus",
             csrf,
             {
               status,
@@ -563,20 +554,20 @@ export const proposalSetStatus = (
               publickey,
               reason
             },
-            apiPi
+            apiRecords
           )
         )
     )
     .then(getResponse);
 
 export const newProposal = (csrf, proposal) =>
-  POST("/proposal/new", csrf, proposal, apiPi).then(getResponse);
+  POST("/new", csrf, proposal, apiRecords).then(getResponse);
 
 export const editProposal = (csrf, proposal) =>
-  POST("/proposal/edit", csrf, proposal, apiPi).then(getResponse);
+  POST("/edit", csrf, proposal, apiRecords).then(getResponse);
 
 export const newComment = (csrf, comment) =>
-  POST("/comment/new", csrf, comment, apiPi).then(getResponse);
+  POST("/new", csrf, comment, apiComments).then(getResponse);
 
 export const startVote = (csrf, userid, voteParams) =>
   pki
@@ -588,7 +579,7 @@ export const startVote = (csrf, userid, voteParams) =>
         )
       ).then((signatures) =>
         POST(
-          "/vote/start",
+          "/start",
           csrf,
           {
             starts: signatures.map((signature, i) => ({
@@ -597,17 +588,20 @@ export const startVote = (csrf, userid, voteParams) =>
               signature
             }))
           },
-          apiPi
+          apiTicketVote
         )
       )
     )
     .then(getResponse);
 
 export const proposalsBatchVoteSummary = (csrf, tokens) =>
-  POST("/votes/summaries", csrf, { tokens }, apiPi).then(getResponse);
+  POST("/summaries", csrf, { tokens }, apiTicketVote).then(getResponse);
 
 export const proposalVoteResults = (csrf, token) =>
-  POST("/votes/results", csrf, { token }, apiPi).then(getResponse);
+  POST("/results", csrf, { token }, apiTicketVote).then(getResponse);
+
+export const proposalSubmissions = (token) =>
+  POST("/submissions", "", { token }, apiTicketVote).then(getResponse);
 
 export const proposalAuthorizeOrRevokeVote = (
   csrf,
@@ -623,7 +617,7 @@ export const proposalAuthorizeOrRevokeVote = (
         .signStringHex(userid, `${token}${version}${action}`)
         .then((signature) =>
           POST(
-            "/vote/authorize",
+            "/authorize",
             csrf,
             {
               action,
@@ -632,7 +626,7 @@ export const proposalAuthorizeOrRevokeVote = (
               signature,
               publickey
             },
-            apiPi
+            apiTicketVote
           )
         )
     )
@@ -653,11 +647,11 @@ export const userProposalCredits = () =>
 export const rescanUserPayments = (csrf, userid) =>
   PUT("/user/payments/rescan", csrf, { userid }).then(getResponse);
 
-export const proposalsInventory = (csrf) =>
-  POST("/proposals/inventory", csrf, {}, apiPi).then(getResponse);
+export const proposalsInventory = () =>
+  POST("/inventory", "", {}, apiRecords).then(getResponse);
 
 export const votesInventory = (csrf) =>
-  POST("/votes/inventory", csrf, {}, apiPi).then(getResponse);
+  POST("/inventory", csrf, {}, apiTicketVote).then(getResponse);
 
 // CMS
 
