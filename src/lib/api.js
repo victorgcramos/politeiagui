@@ -9,11 +9,9 @@ import {
   DCC_STATUS_ACTIVE,
   PROPOSAL_METADATA_FILENAME,
   VOTE_METADATA_FILENAME
-  // PROPOSAL_TYPE_RFP,
-  // PROPOSAL_TYPE_RFP_SUBMISSION
 } from "../constants";
+import { APIError, isWww } from "./errors.js";
 import {
-  getHumanReadableError,
   digestPayload,
   digest,
   objectToSHA256,
@@ -21,7 +19,6 @@ import {
   objectToBuffer,
   bufferToBase64String
 } from "../helpers";
-// import { convertObjectToUnixTimestamp } from "src/utils";
 
 const STATUS_ERR = {
   400: "Bad response from server",
@@ -324,19 +321,24 @@ const parseResponseBody = (response) => {
 
 export const parseResponse = (response) =>
   parseResponseBody(response).then((json) => {
-    if (json.errorcode) {
-      if (json.errorcontext === null) json.errorcontext = [];
-      const err = new Error(
-        getHumanReadableError(json.errorcode, json.errorcontext)
-      );
-      err.internalError = false;
-      err.errorCode = json.errorcode;
-      err.errorContext = json.errorcontext;
-      throw err;
+    let errorcode;
+    let errorcontext;
+    if (isWww(response.url)) {
+      errorcode = json.ErrorCode;
+      errorcode = json.ErrorCode;
+    } else {
+      errorcode = json.errorcode;
+      errorcode = json.errorcode;
     }
+
+    if (errorcode) {
+      throw new APIError(response, errorcode, errorcontext);
+    }
+
     if (STATUS_ERR[response.status]) {
       throw new Error(STATUS_ERR[response.status]);
     }
+
     return {
       response: json,
       csrfToken: response.headers.get("X-Csrf-Token")
