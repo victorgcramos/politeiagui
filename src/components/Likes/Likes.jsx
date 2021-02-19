@@ -72,7 +72,8 @@ const Likes = ({
   );
 
   return (
-    <div className="align-center">
+    <div
+      className={classNames("align-center", disabled && styles.likeDisabled)}>
       {loading && apiLoading ? (
         <div className={styles.likeBoxSpinner}>
           <Spinner invert />
