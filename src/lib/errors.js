@@ -1,46 +1,66 @@
-const Pi = "pi";
-const Records = "records";
-const Comments = "comments";
-const Ticketvote = "ticketvote";
-const Www = "v1"; // www api has no prefix so it's identified by v1
-const defaultErrorMessage = (code, api) => `
+const APIPi = "pi";
+const APIRecords = "records";
+const APIComments = "comments";
+const APITicketvote = "ticketvote";
+const APIWww = "v1"; // www api has no prefix so it's identified by v1
+
+const PluginIdPi = "pi";
+const PluginIdComments = "comments";
+const PluginIdTicketvote = "ticketvote";
+
+const defaultErrorMessage = (code = 0, api = "") => `
   The server encountered an unexpected error, please contact Politeia
   administrators and inform the api/${api} error code: ${code}
 `;
 
-export function APIError(response, code, context) {
+// API User errors
+export function APIUserError(response, code, context) {
   const url = new URL(response.url);
   const apiType = url.pathname.split("/")[2];
 
   switch (apiType) {
-    case Pi:
-      throw new PiError(code);
-    case Records:
-      throw new RecordsError(code, context);
-    case Comments:
-      throw new CommentsError(code);
-    case Ticketvote:
-      throw new TicketvoteError(code);
-    case Www:
-      throw new WWWError(code, context);
+    case APIPi:
+      throw new PiUserError(code);
+    case APIRecords:
+      throw new RecordsUserError(code, context);
+    case APIComments:
+      throw new CommentsUserError(code);
+    case APITicketvote:
+      throw new TicketvoteUserError(code);
+    case APIWww:
+      throw new WWWUserError(code, context);
+    default:
+      defaultErrorMessage();
   }
 }
 
-APIError.prototype = new Error();
+// API Plugin errors
+export function APIPluginError(pluginId, code, context) {
+  switch (pluginId) {
+    case PluginIdPi:
+      throw new PiPluginError(code, context);
+    case PluginIdComments:
+      throw new CommentsPluginError(code, context);
+    case PluginIdTicketvote:
+      throw new TicketvotePluginError(code, context);
+    default:
+      defaultErrorMessage();
+  }
+}
 
-function PiError(code) {
+function PiUserError(code) {
   const errorMap = {
     1: "Invalid inputs for request",
     2: "The number of requested proposal tokens exceeds the page size policy",
     3: "The proposal was in an invalid state"
   };
 
-  this.message = errorMap[code] || defaultErrorMessage(code, Pi);
+  this.message = errorMap[code] || defaultErrorMessage(code, APIPi);
 }
 
-PiError.prototype = new Error();
+PiUserError.prototype = new Error();
 
-function RecordsError(code, context) {
+function RecordsUserError(code, context) {
   const errorMap = {
     1: "Invalid inputs for request",
     2: `The file ${context} has an invalid name`,
@@ -61,12 +81,12 @@ function RecordsError(code, context) {
     18: "The number of requested record tokens exceeds the page size policy"
   };
 
-  this.message = errorMap[code] || defaultErrorMessage(code, Records);
+  this.message = errorMap[code] || defaultErrorMessage(code, APIRecords);
 }
 
-RecordsError.prototype = new Error();
+RecordsUserError.prototype = new Error();
 
-function CommentsError(code) {
+function CommentsUserError(code) {
   const errorMap = {
     1: "Invalid inputs for request",
     2: "Unvetted records can only be voted by an admin or the author",
@@ -79,24 +99,24 @@ function CommentsError(code) {
     9: "No tokens found in the count votes request"
   };
 
-  this.message = errorMap[code] || defaultErrorMessage(code, Comments);
+  this.message = errorMap[code] || defaultErrorMessage(code, APIComments);
 }
 
-TicketvoteError.prototype = new Error();
+CommentsUserError.prototype = new Error();
 
-function TicketvoteError(code) {
+function TicketvoteUserError(code) {
   const errorMap = {
     1: "Invalid inputs for request",
     2: "The provided user public key is not active",
     3: "Unauthorized operation"
   };
 
-  this.message = errorMap[code] || defaultErrorMessage(code, Ticketvote);
+  this.message = errorMap[code] || defaultErrorMessage(code, APITicketvote);
 }
 
-TicketvoteError.prototype = new Error();
+TicketvoteUserError.prototype = new Error();
 
-function WWWError(code, context) {
+function WWWUserError(code, context) {
   const errorMap = {
     1: "The provided password was invalid",
     2: "The provided email address is invalid",
@@ -238,12 +258,72 @@ function WWWError(code, context) {
     1058: "Code tracker required for attempted request, check token setting in config"
   };
 
-  this.message = errorMap[code] || defaultErrorMessage(code, Www);
+  this.message = errorMap[code] || defaultErrorMessage(code, APIWww);
 }
 
-WWWError.prototype = new Error();
+WWWUserError.prototype = new Error();
 
-export function isWww(url) {
+function PiPluginError(code, context) {
+  const errorMap = {
+    1: `The file ${context} has an invalid name`,
+    2: `The file size is invalid, ${context}`,
+    3: `The required ${context} file is missing`,
+    4: `The provided images exceeds the maximum allowed, ${context}`,
+    5: `The file exceeds the maximum allowed size, ${context}`,
+    6: `The proposal name ${context} is invalid`,
+    7: `This operation is not allowed, ${context}`
+  };
+
+  this.message = errorMap[code] || defaultErrorMessage(code, PluginIdPi);
+}
+
+PiPluginError.prototype = new Error();
+
+function CommentsPluginError(code, context) {
+  const errorMap = {
+    1: `The provided proposal token is invalid, ${context}`,
+    2: "The provided user public key is not active",
+    3: "The provided signature is invalid",
+    4: `The comment exceeds the maximum length allowed, ${context}`,
+    5: "The comment has no changes and therefore cannot be updated",
+    6: `The provided comment code is not found ${context}`,
+    7: "Only the comment author is allowed to edit",
+    8: `The provided parent ID is invalid, ${context}`,
+    9: `The provided comment vote is invalid, ${context}`,
+    10: "You have exceeded the max number of changes on your vote"
+  };
+
+  this.message = errorMap[code] || defaultErrorMessage(code, PluginIdComments);
+}
+
+CommentsPluginError.prototype = new Error();
+
+function TicketvotePluginError(code, context) {
+  const errorMap = {
+    1: `The provided record token is invalid, ${context}`,
+    2: "The provided user public key is invalid",
+    3: "The provided signature is invalid",
+    4: `The provided record version is invalid, ${context}`,
+    5: `The provided record status is invalid, ${context}`,
+    6: `This operation is not authorized, ${context}`,
+    7: `The start details for this vote are missing, ${context}`,
+    8: `The start details for this vote are invalid, ${context}`,
+    9: `The provided vote parameters are invalid, ${context}`,
+    10: `This operation is invalid for this vote status, ${context}`,
+    11: `The provided metadata for this vote is invalid, ${context}`,
+    12: `The provided linkBy is invalid, ${context}`,
+    13: `The provided linkTo is invalid, ${context}`,
+    14: `The parent for the runnoff vote is invalid, ${context}`,
+    15: `The linkBy deadline for this record is not yet expired, ${context}`
+  };
+
+  this.message = errorMap[code] || defaultErrorMessage(code, PluginIdComments);
+}
+
+TicketvotePluginError.prototype = new Error();
+
+// Helpers
+export function isAPIWww(url) {
   const apiType = new URL(url).pathname.split("/")[2];
-  return apiType === Www;
+  return apiType === APIWww;
 }

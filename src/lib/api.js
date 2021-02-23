@@ -10,7 +10,7 @@ import {
   PROPOSAL_METADATA_FILENAME,
   VOTE_METADATA_FILENAME
 } from "../constants";
-import { APIError, isWww } from "./errors.js";
+import { APIUserError, APIPluginError, isAPIWww } from "./errors.js";
 import {
   digestPayload,
   digest,
@@ -321,18 +321,20 @@ const parseResponseBody = (response) => {
 
 export const parseResponse = (response) =>
   parseResponseBody(response).then((json) => {
-    let errorcode;
-    let errorcontext;
-    if (isWww(response.url)) {
+    let errorcode = json.errorcode;
+    let errorcontext = json.errorcontext;
+
+    if (isAPIWww(response.url)) {
       errorcode = json.ErrorCode;
-      errorcode = json.ErrorCode;
-    } else {
-      errorcode = json.errorcode;
-      errorcode = json.errorcode;
+      errorcontext = json.ErrorContext;
+    }
+
+    if (json.pluginid) {
+      throw new APIPluginError(json.pluginid, errorcode, errorcontext);
     }
 
     if (errorcode) {
-      throw new APIError(response, errorcode, errorcontext);
+      throw new APIUserError(response, errorcode, errorcontext);
     }
 
     if (STATUS_ERR[response.status]) {
