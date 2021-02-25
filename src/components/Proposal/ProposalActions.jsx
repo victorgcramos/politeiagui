@@ -2,6 +2,7 @@ import React from "react";
 import { Button, classNames } from "pi-ui";
 import {
   isPublicProposal,
+  isCensoredProposal,
   isUnreviewedProposal,
   isAbandonedProposal,
   isVotingNotAuthorizedProposal,
@@ -15,6 +16,7 @@ import {
 import AdminContent from "src/components/AdminContent";
 import { useLoaderContext } from "src/containers/Loader";
 import styles from "./ProposalActions.module.css";
+import { PROPOSAL_STATE_UNVETTED } from "../../constants";
 
 const UnvettedActions = ({ proposal }) => {
   if (!useUnvettedProposalActions()) {
@@ -137,10 +139,10 @@ const PublicActions = ({
 };
 
 const ProposalActions = ({ proposal, ...props }) =>
-  isPublicProposal(proposal) || isAbandonedProposal(proposal) ? (
-    <PublicActions {...{ ...props, proposal }} />
-  ) : (
+  proposal.state === PROPOSAL_STATE_UNVETTED ? (
     <UnvettedActions proposal={proposal} />
+  ) : (
+    <PublicActions {...{ ...props, proposal }} />
   );
 
 export default ProposalActions;

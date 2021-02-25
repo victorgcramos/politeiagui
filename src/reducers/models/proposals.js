@@ -17,6 +17,10 @@ import {
   ACTIVE_VOTE,
   APPROVED,
   REJECTED,
+  PUBLIC,
+  ARCHIVED,
+  CENSORED,
+  AUTHORIZED,
   PROPOSAL_STATE_UNVETTED
 } from "../../constants";
 import {
@@ -31,11 +35,14 @@ const DEFAULT_STATE = {
     [UNREVIEWED]: [],
     [VETTEDCENSORED]: [],
     [UNVETTEDCENSORED]: [],
-    [ABANDONED]: [],
     [PRE_VOTE]: [],
     [ACTIVE_VOTE]: [],
+    [AUTHORIZED]: [],
     [APPROVED]: [],
-    [REJECTED]: []
+    [REJECTED]: [],
+    [PUBLIC]: [],
+    [ARCHIVED]: [],
+    [CENSORED]: []
   },
   allProposalsByUserId: {},
   numOfProposalsByUserId: {},
@@ -118,7 +125,10 @@ const proposals = (state = DEFAULT_STATE, action) =>
               ...Object.keys(action.payload).reduce(
                 (res, status) => ({
                   ...res,
-                  [status]: action.payload[status] || []
+                  [status]: [
+                    ...allProps[status],
+                    ...(action.payload[status] || [])
+                  ]
                 }),
                 {}
               )
