@@ -16,8 +16,7 @@ import {
   PROPOSAL_STATE_VETTED,
   PROPOSAL_STATE_UNVETTED,
   UNREVIEWED,
-  VETTEDCENSORED,
-  UNVETTEDCENSORED,
+  CENSORED,
   AUTHORIZED,
   PRE_VOTE,
   ACTIVE_VOTE,
@@ -470,8 +469,25 @@ export const onFetchTokenInventory = (
   try {
     return await Promise.all([
       isProposalStatus && api.proposalsInventory(state, status, page),
-      isVoteStatus && api.votesInventory(status, page)
+      isVoteStatus &&
+        state !== PROPOSAL_STATE_UNVETTED &&
+        api.votesInventory(status, page)
     ]).then(([proposals, votes]) => {
+      dispatch(
+        act.RECEIVE_UNVETTED_TOKEN_INVENTORY({
+          [UNREVIEWED]:
+            (proposals &&
+              proposals.unvetted &&
+              proposals.unvetted.unreviewed) ||
+            [],
+          [CENSORED]:
+            (proposals && proposals.unvetted && proposals.unvetted.censored) ||
+            [],
+          [ARCHIVED]:
+            (proposals && proposals.unvetted && proposals.unvetted.archived) ||
+            []
+        })
+      );
       dispatch(
         act.RECEIVE_TOKEN_INVENTORY({
           [PRE_VOTE]:
@@ -485,16 +501,8 @@ export const onFetchTokenInventory = (
           [ACTIVE_VOTE]: (votes && votes.vetted && votes.vetted.started) || [],
           [APPROVED]: (votes && votes.vetted && votes.vetted.approved) || [],
           [REJECTED]: (votes && votes.vetted && votes.vetted.rejected) || [],
-          [UNREVIEWED]:
-            (proposals &&
-              proposals.unvetted &&
-              proposals.unvetted.unreviewed) ||
-            [],
-          [VETTEDCENSORED]:
-            (proposals && proposals.vetted && proposals.vetted.censored) || [],
-          [UNVETTEDCENSORED]:
-            (proposals && proposals.unvetted && proposals.unvetted.censored) ||
-            []
+          [CENSORED]:
+            (proposals && proposals.vetted && proposals.vetted.censored) || []
         })
       );
       return [proposals, votes];

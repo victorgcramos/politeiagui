@@ -1,15 +1,10 @@
 import React, { useState, useMemo, useEffect } from "react";
 import { Tabs, Tab } from "pi-ui";
-import difference from "lodash/difference";
-import isEmpty from "lodash/isEmpty";
 import LazyList from "src/components/LazyList";
-import { getRecordsByTabOption, getRecordToken } from "./helpers";
-import useQueryStringWithIndexValue from "src/hooks/utils/useQueryStringWithIndexValue";
+import { getRecordsByTabOption } from "./helpers";
 import HelpMessage from "src/components/HelpMessage";
 import { useConfig } from "src/containers/Config";
-import { NOJS_ROUTE_PREFIX, INVENTORY_PAGE_SIZE } from "src/constants";
-
-const DEFAULT_PAGE_SIZE = 4;
+import { NOJS_ROUTE_PREFIX } from "src/constants";
 
 const LoadingPlaceholders = ({ numberOfItems, placeholder }) => {
   const Item = placeholder;
@@ -38,16 +33,15 @@ const RecordsView = ({
   tabLabels,
   recordTokensByTab,
   renderRecord,
-  pageSize = DEFAULT_PAGE_SIZE,
   placeholder,
   getEmptyMessage = getDefaultEmptyMessage,
-  setRemainingTokens,
-  onFetchMoreTokens,
+  onFetchMoreProposals,
   onTabChange,
   isLoading,
   index,
   onSetIndex,
-  hasMore
+  hasMore,
+  statusByTab
 }) => {
   const [loadingItems, setLoadingItems] = useState(0);
   const { javascriptEnabled } = useConfig();
@@ -64,25 +58,9 @@ const RecordsView = ({
     [recordTokensByTab, records, tabOption]
   );
 
-  const hasMoreRecordsToLoad =
-    filteredTokens && filteredRecords.length < filteredTokens.length;
-
   const handleFetchMoreRecords = () => {
-    if (!filteredTokens || isLoading) {
-      console.log("não tem nada");
-      return;
-    }
-    // console.log(filteredTokens, filteredRecords);
-    // // make sure tokens being requested are different from the ones
-    // // already requested or fetched
-    // const fetchedTokens = filteredRecords.map(getRecordToken);
-    // const recordTokensToBeFetched = difference(
-    //   filteredTokens,
-    //   fetchedTokens
-    // ).slice(0, pageSize); // handle pagination
-    // setRemainingTokens(recordTokensToBeFetched);
-    // // setHasMore(hasMoreRecordsToLoad);
-    onFetchMoreTokens && onFetchMoreTokens();
+    if (!filteredTokens || isLoading) return;
+    onFetchMoreProposals && onFetchMoreProposals(statusByTab[tabLabels[index]]);
     setLoadingItems(4);
   };
 
@@ -122,7 +100,7 @@ const RecordsView = ({
         onSelectTab={onSetIndex}
         activeTabIndex={index}
         className="padding-bottom-s"
-        mode="dropdown">
+        mode={tabLabels.length < 4 ? "horizontal" : "dropdown"}>
         {javascriptEnabled ? tabs : nojsTabs}
       </Tabs>
     ),

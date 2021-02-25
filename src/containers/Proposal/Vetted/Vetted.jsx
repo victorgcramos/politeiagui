@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo } from "react";
 import styles from "./VettedProposals.module.css";
 import { tabValues, mapProposalsTokensByTab, statusByTab } from "./helpers";
 import useProposalsBatch from "src/hooks/api/useProposalsBatch";
@@ -26,18 +26,17 @@ const tabLabels = [
 
 const VettedProposals = ({ TopBanner, PageDetails, Sidebar, Main }) => {
   const [index, onSetIndex] = useQueryStringWithIndexValue("tab", 0, tabLabels);
-  const [remainingTokens, setRemainingTokens] = useState();
   const {
     proposals,
     proposalsTokens,
     loading,
     verifying,
-    onRestartMachine
+    onRestartMachine,
+    hasMoreProposals
   } = useProposalsBatch({
     fetchRfpLinks: true,
     fetchVoteSummaries: true,
     proposalStatus: statusByTab[tabLabels[index]]
-    // allowFetch: !!status
   });
 
   const getEmptyMessage = useCallback((tab) => {
@@ -93,11 +92,9 @@ const VettedProposals = ({ TopBanner, PageDetails, Sidebar, Main }) => {
       statusByTab={statusByTab}
       index={index}
       onSetIndex={handleSetIndex}
-      // onTabChange={handleStatusChange}
-      onFetchMoreTokens={onRestartMachine}
-      setRemainingTokens={setRemainingTokens}
+      onFetchMoreProposals={onRestartMachine}
       dropdownTabsForMobile={true}
-      hasMore={remainingTokens && !!remainingTokens.length}
+      hasMore={hasMoreProposals}
       isLoading={loading || verifying}>
       {content}
     </RecordsView>

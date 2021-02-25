@@ -22,7 +22,6 @@ import takeRight from "lodash/fp/takeRight";
 import isEmpty from "lodash/fp/isEmpty";
 import keys from "lodash/fp/keys";
 import difference from "lodash/fp/difference";
-import isEqual from "lodash/fp/isEqual";
 import {
   PROPOSAL_STATE_VETTED,
   PROPOSAL_STATE_UNVETTED,
@@ -66,8 +65,7 @@ export default function useProposalsBatch({
   fetchRfpLinks,
   fetchVoteSummaries = false,
   unvetted = false,
-  proposalStatus,
-  allowFetch = true
+  proposalStatus
 }) {
   const recordState = useMemo(
     () => (unvetted ? PROPOSAL_STATE_UNVETTED : PROPOSAL_STATE_VETTED),
@@ -77,12 +75,15 @@ export default function useProposalsBatch({
   const [{ isVoteStatus, value: status }, setStatus] = useState({});
   const proposals = useSelector(sel.proposalsByToken);
   const voteSummaries = useSelector(sel.summaryByToken);
-  const allByStatus = useSelector(sel.allByStatus);
-  // console.log(status, allByStatus[getProposalStatusLabel(status)]);
+  const allByStatus = useSelector(
+    unvetted ? sel.allByStatusUnvetted : sel.allByStatus
+  );
   const page = useMemo(() => {
     const tokens = allByStatus[getProposalStatusLabel(status, isVoteStatus)];
     return getCurrentPage(tokens);
   }, [status, isVoteStatus, allByStatus]);
+
+  const [previousPage, setPreviousPage] = useState(0);
 
   const errorSelector = useMemo(
     () => or(sel.apiProposalsBatchError, sel.apiPropsVoteSummaryError),
@@ -105,20 +106,21 @@ export default function useProposalsBatch({
         return send(VERIFY);
       },
       start: () => {
-        const needsVerification = hasRemainingTokens || (status && page === 0);
-        console.log("vai carregar o status", status, isVoteStatus, page);
-        if (needsVerification) return send(VERIFY);
+        if (hasRemainingTokens) return send(VERIFY);
+        if (page && page === previousPage) return send(RESOLVE);
         onFetchTokenInventory(recordState, status, page + 1)
           .catch((e) => send(REJECT, e))
           .then(([proposals, votes]) => {
-            // fetch proposal for given status
+            // prepare token batch to fetch proposal for given status
             const proposalStatusLabel = getProposalStatusLabel(
               proposalStatus ? proposalStatus.value : 1,
               proposalStatus && proposalStatus.isVoteStatus
             );
+            setPreviousPage(page);
             const tokens = (proposalStatus && proposalStatus.isVoteStatus
               ? votes
               : proposals)[recordState][proposalStatusLabel];
+            if (!tokens) return send(RESOLVE);
             setRemainingTokens(tokens);
             return send(VERIFY);
           });
@@ -126,7 +128,6 @@ export default function useProposalsBatch({
       },
       verify: () => {
         if (hasRemainingTokens) {
-          // console.log("rem remaining tokens");
           const [fetch, next] = getTokensForProposalsPagination(
             remainingTokens
           );
@@ -171,13 +172,17 @@ export default function useProposalsBatch({
 
   const onRestartMachine = (newStatus) => {
     const newStatusLabel = getProposalStatusLabel(
-      newStatus.value,
-      newStatus.isVoteStatus
+      !newStatus ? status : newStatus.value,
+      !newStatus ? isVoteStatus : newStatus.isVoteStatus
     );
-    const unfetchedTokens = getUnfetchedTokens(proposals, [
-      ...(allByStatus[newStatusLabel] || []),
-      ...(remainingTokens || [])
-    ]);
+    const unfetchedTokens = getUnfetchedTokens(
+      proposals,
+      uniq([...(allByStatus[newStatusLabel] || []), ...(remainingTokens || [])])
+    );
+    if (isEmpty(remainingTokens) && isEmpty(unfetchedTokens) && !page) {
+      // stop condition
+      return send(RESOLVE);
+    }
     setRemainingTokens(unfetchedTokens);
     setStatus(newStatus);
     return send(START);
@@ -196,6 +201,7 @@ export default function useProposalsBatch({
     verifying: state.verifying,
     onRestartMachine,
     onFetchMoreProposals,
+    hasMoreProposals: !!remainingTokens.length,
     machineCurrentState: state.status
   };
 }

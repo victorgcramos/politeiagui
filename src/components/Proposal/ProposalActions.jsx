@@ -1,10 +1,7 @@
 import React from "react";
 import { Button, classNames } from "pi-ui";
 import {
-  isPublicProposal,
-  isCensoredProposal,
   isUnreviewedProposal,
-  isAbandonedProposal,
   isVotingNotAuthorizedProposal,
   isUnderDiscussionProposal,
   isRfpReadyToRunoff

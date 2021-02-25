@@ -19,8 +19,9 @@ import {
   APPROVED,
   REJECTED,
   ARCHIVED,
-  CENSORED,
+  UNREVIEWED,
   PUBLIC,
+  CENSORED,
   NOJS_ROUTE_PREFIX,
   PROPOSAL_VOTING_REJECTED
 } from "../../constants";
@@ -381,6 +382,7 @@ export const getProposalStatusLabel = (proposalStatus, isVotingStatus) =>
           [PROPOSAL_VOTING_REJECTED]: REJECTED
         }
       : {
+          [PROPOSAL_STATUS_UNREVIEWED]: UNREVIEWED,
           [PROPOSAL_STATUS_ARCHIVED]: ARCHIVED,
           [PROPOSAL_STATUS_CENSORED]: CENSORED,
           [PROPOSAL_STATUS_PUBLIC]: PUBLIC
