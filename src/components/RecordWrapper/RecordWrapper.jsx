@@ -252,11 +252,11 @@ export const DownloadRecord = ({ content, ...rest }) => {
     censorshiprecord: content.censorshiprecord
   };
   return (
-  <DownloadJSON 
+  <DownloadJSON
     {...rest}
     content={proposal}
   />);
-}
+};
 
 export const DownloadTimestamps = ({ token, version, state, label }) => {
   const { onFetchRecordTimestamps } = useTimestamps();
