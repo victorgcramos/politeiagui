@@ -389,13 +389,9 @@ const Proposal = React.memo(function Proposal({
                   className={styles.downloadLinksWrapper}
                   title="Available Downloads">
                   <DownloadRecord
-                    fileName={proposalToken}
-                    content={{
-                      ...proposal,
-                      serverpublickey: apiInfo.pubkey
-                    }}
-                    className="margin-right-l"
-                    label="Download Proposal Bundle"
+                    fileName={`${proposalToken}-v${version}`}
+                    content={proposal}
+                    label="Proposal Bundle"
                   />
                   <DownloadTimestamps
                     label="Proposal Timestamps"
