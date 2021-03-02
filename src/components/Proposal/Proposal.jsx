@@ -43,6 +43,7 @@ import LoggedInContent from "src/components/LoggedInContent";
 import ProposalsList from "../ProposalsList/ProposalsList";
 import VotesCount from "./VotesCount";
 import DownloadComments from "src/containers/Comments/Download";
+import DownloadVotes from "src/containers/Proposal/Download/DownloadVotes";
 import ProposalActions from "./ProposalActions";
 import ThumbnailGrid from "src/components/Files";
 import VersionPicker from "src/components/VersionPicker";
@@ -137,6 +138,7 @@ const Proposal = React.memo(function Proposal({
   const isNotExtendedRfpOrSubmission = (isRfp || isRfpSubmission) && !extended;
   const hasVoteSummary = !!voteSummary && !!voteSummary.endblockheight;
   const proposalToken = censorshiprecord && censorshiprecord.token;
+  const totalVotes = !!voteSummary && getVotesReceived(voteSummary);
   const {
     proposalURL,
     authorURL,
@@ -400,17 +402,24 @@ const Proposal = React.memo(function Proposal({
                     version={version}
                     state={state}
                   />
-                  {isPublic && (
+                  {isPublic && commentsCount > 0 && (
                     <DownloadComments
                       label="Comments Bundle"
                       recordToken={proposalToken}
                     />
                   )}
-                  <DownloadComments
-                    label="Comments Timestamps"
+                  {isPublic && commentsCount > 0 && (
+                    <DownloadComments
+                      label="Comments Timestamps"
+                      recordToken={proposalToken}
+                      isTimestamp={true}
+                      state={state}
+                    />
+                  )}
+                  <DownloadVotes
+                    label="Load Votes Timestamp"
+                    totalVotes={totalVotes}
                     recordToken={proposalToken}
-                    isTimestamp={true}
-                    state={state}
                   />
                 </LinkSection>
                 <Row className={styles.proposalActions}>
