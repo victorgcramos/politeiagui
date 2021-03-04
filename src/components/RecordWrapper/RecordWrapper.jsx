@@ -239,7 +239,7 @@ export const RfpProposalLink = ({ url, rfpTitle }) => {
   );
 };
 
-export const DownloadRecord = ({ content, ...rest }) => {
+export const DownloadRecord = ({ content, fileName, label, serverpubkey }) => {
   // Build proposal data to match record type on backend.
   const proposal = {
     state: content.state,
@@ -249,11 +249,13 @@ export const DownloadRecord = ({ content, ...rest }) => {
     username: content.username,
     metadata: content.metadata,
     files: content.files,
-    censorshiprecord: content.censorshiprecord
+    censorshiprecord: content.censorshiprecord,
+    serverpubkey
   };
   return (
   <DownloadJSON
-    {...rest}
+    fileName={fileName}
+    label={label}
     content={proposal}
   />);
 };
