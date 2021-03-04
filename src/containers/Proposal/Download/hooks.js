@@ -8,7 +8,7 @@ import {
   loadVotesTimestamps
 } from "src/lib/local_storage";
 
-export function useDownloadVoteTimestamps(token, totalVotes) {
+export function useDownloadVoteTimestamps(token, votesCount) {
   const [timestamps, setTimestamps] = useState(null);
   const [page, setPage] = useState(1);
   const [progress, setProgress] = useState(0);
@@ -24,7 +24,7 @@ export function useDownloadVoteTimestamps(token, totalVotes) {
     actions: {
       initial: () => {
         const ts = loadVotesTimestamps(token);
-        if (ts?.length === totalVotes) {
+        if (ts?.length === votesCount) {
           return send(RESOLVE, { timestamps: ts });
         }
         if (token && !timestamps) {
@@ -45,7 +45,7 @@ export function useDownloadVoteTimestamps(token, totalVotes) {
         return send(FETCH);
       },
       verify: () => {
-        if (timestamps?.length === totalVotes) {
+        if (timestamps?.length === votesCount) {
           // all timestamps loaded, resolve
           handleSaveVotesTimetamps(token, timestamps);
           fileDownload(
@@ -61,7 +61,7 @@ export function useDownloadVoteTimestamps(token, totalVotes) {
               } else {
                 return send(REJECT, "fetching outbound vote pages");
               }
-              setProgress(((timestamps.length * 100) / totalVotes).toFixed(2));
+              setProgress(((timestamps.length * 100) / votesCount).toFixed(2));
               setPage(page + 1);
               return send(VERIFY);
             })

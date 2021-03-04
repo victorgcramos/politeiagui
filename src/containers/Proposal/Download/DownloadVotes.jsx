@@ -5,23 +5,23 @@ import { useDownloadVoteTimestamps } from "./hooks";
 import { Spinner, Link } from "pi-ui";
 import { loadVotesTimestamps } from "src/lib/local_storage";
 
-const DownloadVotesWrapper = ({ label, recordToken, totalVotes }) => {
+const DownloadVotesWrapper = ({ label, recordToken, votesCount }) => {
   const [start, setStart] = useState(false);
 
   const ts = loadVotesTimestamps(recordToken);
-  const hasLoadedTimestamps = ts?.length === totalVotes;
+  const hasLoadedTimestamps = ts?.length === votesCount;
 
   return start || hasLoadedTimestamps ? (
-    <DownloadVotes recordToken={recordToken} totalVotes={totalVotes} />
+    <DownloadVotes recordToken={recordToken} votesCount={votesCount} />
   ) : (
     <Link onClick={() => setStart(true)}>{label}</Link>
   );
 };
 
-const DownloadVotes = ({ recordToken, totalVotes }) => {
+const DownloadVotes = ({ recordToken, votesCount }) => {
   const { timestamps, progress, loading, error } = useDownloadVoteTimestamps(
     recordToken,
-    totalVotes
+    votesCount
   );
 
   return loading ? (

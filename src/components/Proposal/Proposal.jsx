@@ -138,7 +138,7 @@ const Proposal = React.memo(function Proposal({
   const isNotExtendedRfpOrSubmission = (isRfp || isRfpSubmission) && !extended;
   const hasVoteSummary = !!voteSummary && !!voteSummary.endblockheight;
   const proposalToken = censorshiprecord && censorshiprecord.token;
-  const totalVotes = !!voteSummary && getVotesReceived(voteSummary);
+  const votesCount = !!voteSummary && getVotesReceived(voteSummary);
   const {
     proposalURL,
     authorURL,
@@ -416,11 +416,13 @@ const Proposal = React.memo(function Proposal({
                       state={state}
                     />
                   )}
-                  <DownloadVotes
-                    label="Load Votes Timestamp"
-                    totalVotes={totalVotes}
-                    recordToken={proposalToken}
-                  />
+                  {votesCount > 0 && (
+                    <DownloadVotes
+                      label="Load Votes Timestamp"
+                      votesCount={votesCount}
+                      recordToken={proposalToken}
+                    />
+                  )}
                 </LinkSection>
                 <Row className={styles.proposalActions}>
                   <CopyLink
