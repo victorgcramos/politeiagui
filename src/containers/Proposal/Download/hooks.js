@@ -8,8 +8,6 @@ import {
   loadVotesTimestamps
 } from "src/lib/local_storage";
 
-// TODO: annouce I am finished with the PR and ask if the user will
-// only be able to download the votes when voting period has ended.
 export function useDownloadVoteTimestamps(token, totalVotes) {
   const [timestamps, setTimestamps] = useState(null);
   const [page, setPage] = useState(1);
