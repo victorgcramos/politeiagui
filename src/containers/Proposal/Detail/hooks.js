@@ -71,7 +71,7 @@ export function useProposal(token, proposalState, threadParentID) {
     actions: {
       initial: () => {
         if (token && isMissingDetails) {
-          onFetchProposalDetails(token, proposalState)
+          onFetchProposalDetails(token)
             .then(() => send(VERIFY))
             .catch((e) => send(REJECT, e));
           onFetchProposalsVoteSummary([token]);
@@ -94,11 +94,7 @@ export function useProposal(token, proposalState, threadParentID) {
       },
       verify: () => {
         if (!isEmpty(unfetchedProposalTokens)) {
-          onFetchProposalsBatch(
-            unfetchedProposalTokens,
-            PROPOSAL_STATE_VETTED,
-            isRfp
-          )
+          onFetchProposalsBatch(unfetchedProposalTokens, isRfp)
             .then(() => send(VERIFY))
             .catch((e) => send(REJECT, e));
           return send(FETCH);
