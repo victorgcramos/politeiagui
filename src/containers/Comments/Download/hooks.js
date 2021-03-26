@@ -50,6 +50,19 @@ export function useDownloadCommentsTimestamps(recordToken) {
     takeRight(commentIds.length - TIMESTAMPS_PAGE_SIZE)(commentIds)
   ];
 
+  const getProgressPercentage = (timestamps) =>
+    (Object.keys(timestamps.length * 100) / commentsLength).toFixed(2);
+
+  const makeTimestampsBundle = (timestamps) =>
+    JSON.stringify(
+      {
+        comments: timestamps.comments,
+        serverpublickey: apiInfo.pubkey
+      },
+      null,
+      2
+    );
+
   const [
     state,
     send,
@@ -73,9 +86,7 @@ export function useDownloadCommentsTimestamps(recordToken) {
         onFetchCommentsTimestamps(recordToken, fetch)
           .then(({ comments }) => {
             setTimestamps({ comments });
-            setProgress(
-              ((Object.keys(comments).length * 100) / commentsLength).toFixed(2)
-            );
+            setProgress(getProgressPercentage(comments));
             setRemaining(next);
             return send(VERIFY);
           })
@@ -88,14 +99,7 @@ export function useDownloadCommentsTimestamps(recordToken) {
           handleSaveCommentsTimetamps(recordToken, timestamps);
           setProgress(100);
           fileDownload(
-            JSON.stringify(
-              {
-                comments: timestamps.comments,
-                serverpublickey: apiInfo.pubkey
-              },
-              null,
-              2
-            ),
+            makeTimestampsBundle(timestamps),
             `${recordToken}-comments-timestamps.json`
           );
           return send(RESOLVE, { timestamps });
@@ -110,12 +114,7 @@ export function useDownloadCommentsTimestamps(recordToken) {
                   ...resp.comments
                 }
               });
-              setProgress(
-                (
-                  (Object.keys(timestamps.comments).length * 100) /
-                  commentsLength
-                ).toFixed(2)
-              );
+              setProgress(getProgressPercentage(comments));
               setRemaining(next);
               return send(VERIFY);
             })
