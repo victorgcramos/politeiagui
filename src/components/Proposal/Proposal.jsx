@@ -44,7 +44,7 @@ import ProposalsList from "../ProposalsList/ProposalsList";
 import VotesCount from "./VotesCount";
 import DownloadComments from "src/containers/Comments/Download";
 import DownloadCommentsTimestamps from "src/containers/Comments/Download/DownloadCommentsTimestamps";
-import DownloadVotes from "src/containers/Proposal/Download/DownloadVotes";
+import DownloadVotesTimestamps from "src/containers/Proposal/Download/DownloadVotesTimestamps";
 import ProposalActions from "./ProposalActions";
 import ThumbnailGrid from "src/components/Files";
 import VersionPicker from "src/components/VersionPicker";
@@ -204,6 +204,7 @@ const Proposal = React.memo(function Proposal({
           CopyLink,
           DownloadRecord,
           DownloadTimestamps,
+          DownloadVotes,
           LinkSection,
           Header,
           Subtitle,
@@ -394,7 +395,7 @@ const Proposal = React.memo(function Proposal({
                   <DownloadRecord
                     fileName={`${proposalToken}-v${version}`}
                     content={proposal}
-                    serverpubkey={apiInfo.pubkey}
+                    serverpublickey={apiInfo.pubkey}
                     label="Proposal Bundle"
                   />
                   <DownloadTimestamps
@@ -418,6 +419,14 @@ const Proposal = React.memo(function Proposal({
                   )}
                   {votesCount > 0 && (
                     <DownloadVotes
+                      label="Votes Bundle"
+                      voteSummary={voteSummary}
+                      fileName={`${proposalToken}-votes`}
+                      serverpublickey={apiInfo.pubkey}
+                    />
+                  )}
+                  {votesCount > 0 && (
+                    <DownloadVotesTimestamps
                       label="Load Votes Timestamp"
                       votesCount={votesCount}
                       recordToken={proposalToken}

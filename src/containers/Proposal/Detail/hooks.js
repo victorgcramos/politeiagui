@@ -43,6 +43,8 @@ export function useProposal(token, proposalState, threadParentID) {
   const onFetchProposalsVoteSummary = useAction(
     act.onFetchProposalsBatchVoteSummary
   );
+  const onFetchVotesDetails = useAction(act.onFetchVotesDetails);
+  const onFetchProposalVoteResults = useAction(act.onFetchProposalVoteResults);
   const proposalSelector = useMemo(() => sel.makeGetProposalByToken(token), [
     token
   ]);
@@ -75,6 +77,8 @@ export function useProposal(token, proposalState, threadParentID) {
             .then(() => send(VERIFY))
             .catch((e) => send(REJECT, e));
           onFetchProposalsVoteSummary([token]);
+          onFetchVotesDetails(token);
+          onFetchProposalVoteResults(token);
           return send(FETCH);
         }
         return send(VERIFY);
@@ -103,7 +107,11 @@ export function useProposal(token, proposalState, threadParentID) {
           !isEmpty(unfetchedSummariesTokens) &&
           proposal?.state === PROPOSAL_STATE_VETTED
         ) {
-          onFetchProposalsVoteSummary(unfetchedSummariesTokens)
+          Promise.all([
+            onFetchProposalsVoteSummary(unfetchedSummariesTokens),
+            onFetchVotesDetails(token),
+            onFetchProposalVoteResults(token)
+          ])
             .then(() => send(VERIFY))
             .catch((e) => send(REJECT, e));
           return send(FETCH);
