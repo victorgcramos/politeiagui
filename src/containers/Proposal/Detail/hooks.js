@@ -2,7 +2,12 @@ import { useMemo } from "react";
 import * as sel from "src/selectors";
 import * as act from "src/actions";
 import { useSelector, useAction } from "src/redux";
-import { getProposalRfpLinks, getProposalToken } from "../helpers";
+import {
+  getProposalRfpLinks,
+  getProposalToken,
+  filterBatchObjectByTokenArraySubstring,
+  filterBatchObjectDiffByTokenArraySubstring
+} from "../helpers";
 import { getDetailsFile } from "./helpers";
 import { PROPOSAL_STATE_VETTED } from "src/constants";
 import useFetchMachine from "src/hooks/utils/useFetchMachine";
@@ -11,7 +16,6 @@ import keys from "lodash/fp/keys";
 import difference from "lodash/fp/difference";
 import isEqual from "lodash/fp/isEqual";
 import values from "lodash/fp/values";
-import pick from "lodash/pick";
 import concat from "lodash/fp/concat";
 
 const getUnfetchedVoteSummaries = (proposal, voteSummaries) => {
@@ -20,12 +24,7 @@ const getUnfetchedVoteSummaries = (proposal, voteSummaries) => {
   const proposalToken = getProposalToken(proposal);
   const tokens = concat(rfpLinks || [])(proposalToken);
   // compare tokens by substring
-  return tokens.filter(
-    (t) =>
-      !keys(voteSummaries).some(
-        (vs) => vs.substring(0, 7) === t.substring(0, 7)
-      )
-  );
+  return filterBatchObjectDiffByTokenArraySubstring(tokens, voteSummaries);
 };
 
 const getProposalRfpLinksTokens = (proposal) => {
@@ -61,8 +60,13 @@ export function useProposal(token, proposalState, threadParentID) {
     getUnfetchedVoteSummaries(proposal, voteSummaries);
   const rfpSubmissions = rfpLinks &&
     proposal.linkby && {
-      proposals: values(pick(proposals, rfpLinks)),
-      voteSummaries: pick(voteSummaries, rfpLinks)
+      proposals: values(
+        filterBatchObjectByTokenArraySubstring(rfpLinks, proposals)
+      ),
+      voteSummaries: filterBatchObjectByTokenArraySubstring(
+        rfpLinks,
+        voteSummaries
+      )
     };
 
   const isRfp = proposal && !!proposal.linkby;

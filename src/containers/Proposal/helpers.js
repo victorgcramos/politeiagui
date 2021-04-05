@@ -33,6 +33,7 @@ import values from "lodash/fp/values";
 import pick from "lodash/pick";
 import isEmpty from "lodash/fp/isEmpty";
 import get from "lodash/fp/get";
+import keys from "lodash/fp/keys";
 
 /**
  * Returns the total amount of votes received by a given proposal voteSummary
@@ -369,12 +370,21 @@ export const getProposalRfpLinks = (proposal, rfpSubmissions, proposals) => {
     : proposal;
 };
 
+/**
+ * Returns the formatted state string for given state value
+ * @param {number} proposalState
+ */
 export const getProposalStateLabel = (proposalState) =>
   get(proposalState)({
     [PROPOSAL_STATE_VETTED]: "vetted",
     [PROPOSAL_STATE_UNVETTED]: "unvetted"
   });
 
+/**
+ * Returns the formatted status string for given status value.
+ * @param {number} proposalStatus
+ * @param {bool} isVotingStatus
+ */
 export const getProposalStatusLabel = (proposalStatus, isVotingStatus) =>
   get(proposalStatus)(
     isVotingStatus
@@ -394,6 +404,11 @@ export const getProposalStatusLabel = (proposalStatus, isVotingStatus) =>
         }
   );
 
+/**
+ * Returns the url for given proposal
+ * @param {obkect} proposal
+ * @param {bool} isJsEnabled
+ */
 export const getProposalLink = (proposal, isJsEnabled) =>
   proposal
     ? getProposalUrl(
@@ -402,3 +417,42 @@ export const getProposalLink = (proposal, isJsEnabled) =>
         proposal.state
       )
     : "";
+
+/**
+ * Returns the object items for given token array, compared by given substring length.
+ *
+ * Ex: filterBatchObjectByTokenArraySubstring(["abcdefghijk"], { "abcdefg": obj, "tuvwxyz": obj2 }, 7)
+ * returns: { "abcdefgijk": obj }
+ *
+ */
+export const filterBatchObjectByTokenArraySubstring = (
+  tokens,
+  object,
+  length = 7
+) =>
+  tokens.reduce((acc, t) => {
+    const token = keys(object).find(
+      (ot) => t.substring(0, length) === ot.substring(0, length)
+    );
+    return token ? { ...acc, [t]: object[token] } : acc;
+  }, {});
+
+/**
+ * Returns the object items, whose keys compared by substring length,
+ *    are not included on token list.
+ * Ex: filterBatchObjectDiffByTokenArraySubstring(["abcdefghijk"], { "abcdefg": obj, "tuvwxyz": obj2 }, 7)
+ * returns: { "tuvwxyz": obj2 }
+ * @param {array} tokens
+ * @param {object} object
+ */
+export const filterBatchObjectDiffByTokenArraySubstring = (
+  tokens,
+  object,
+  length = 7
+) =>
+  tokens.filter(
+    (t) =>
+      !keys(object).some(
+        (vs) => vs.substring(0, length) === t.substring(0, length)
+      )
+  );
