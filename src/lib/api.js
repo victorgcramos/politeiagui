@@ -40,7 +40,7 @@ const getUrl = (path, version, api = apiBase) => {
   return `${api}${version}${path}`;
 };
 
-const GET = (path, version = "v1", withoutVersion, api = apiBase) =>
+export const GET = (path, version = "v1", withoutVersion, api = apiBase) =>
   fetch(getUrl(path, !withoutVersion ? version : undefined, api), {
     credentials: "include"
   }).then(parseResponse);
@@ -56,12 +56,12 @@ const getOptions = (csrf, json, method) => ({
   body: JSON.stringify(json)
 });
 
-const POST = (path, csrf, json, api = apiBase, version = "v1") =>
+export const POST = (path, csrf, json, api = apiBase, version = "v1") =>
   fetch(getUrl(path, version, api), getOptions(csrf, json, "POST")).then(
     parseResponse
   );
 
-const PUT = (path, csrf, json, api = apiBase, version = "v1") =>
+export const PUT = (path, csrf, json, api = apiBase, version = "v1") =>
   fetch(getUrl(path, version, api), getOptions(csrf, json, "PUT")).then(
     parseResponse
   );

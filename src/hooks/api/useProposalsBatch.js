@@ -36,6 +36,8 @@ import {
   getTokensForProposalsPagination
 } from "src/containers/Proposal/helpers";
 
+import { defaultKeyAccessor } from "src/core";
+
 const getRfpLinks = (proposals) =>
   flow(
     values,
@@ -100,7 +102,12 @@ export default function useProposalsBatch({
 
   const [state, send] = useFetchMachine({
     actions: {
-      initial: () => send(START),
+      initial: () => {
+        // helper
+        defaultKeyAccessor && defaultKeyAccessor();
+        //
+        return send(START);
+      },
       start: () => {
         if (hasRemainingTokens) return send(VERIFY);
         if (page && page === previousPage) return send(RESOLVE);
